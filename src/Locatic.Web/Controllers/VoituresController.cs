@@ -35,12 +35,9 @@ public class VoituresController : Controller
     [HttpGet]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
-        var modeles = await _modeles.ListerAsync(cancellationToken);
         var form = new VoitureFormViewModel
         {
-            ModelesDisponibles = modeles.Select(m => new SelectListItem(
-                $"{m.Marque?.Nom} — {m.Nom}",
-                m.Id.ToString()))
+            ModelesDisponibles = await ChargerModelesAsync(cancellationToken)
         };
         return View(form);
     }
@@ -51,32 +48,15 @@ public class VoituresController : Controller
     {
         if (!ModelState.IsValid)
         {
-            var modeles = await _modeles.ListerAsync(cancellationToken);
-            form.ModelesDisponibles = modeles.Select(m => new SelectListItem(
-                $"{m.Marque?.Nom} — {m.Nom}",
-                m.Id.ToString()));
+            form.ModelesDisponibles = await ChargerModelesAsync(cancellationToken);
             return View(form);
         }
 
-        var voiture = new Voiture
-        {
-            Id = form.Id,
-            Immatriculation = form.Immatriculation,
-            Annee = form.Annee,
-            TarifJournalier = form.TarifJournalier,
-            NombrePlaces = form.NombrePlaces,
-            Carburant = form.Carburant,
-            ModeleId = form.ModeleId
-        };
-
-        var resultat = await _voitures.CreerAsync(voiture, cancellationToken);
+        var resultat = await _voitures.CreerAsync(VersEntite(form), cancellationToken);
         if (!resultat.Succes)
         {
             ModelState.AddModelError(string.Empty, resultat.Erreur!);
-            var modeles = await _modeles.ListerAsync(cancellationToken);
-            form.ModelesDisponibles = modeles.Select(m => new SelectListItem(
-                $"{m.Marque?.Nom} — {m.Nom}",
-                m.Id.ToString()));
+            form.ModelesDisponibles = await ChargerModelesAsync(cancellationToken);
             return View(form);
         }
 
@@ -91,20 +71,8 @@ public class VoituresController : Controller
         if (voiture is null)
             return NotFound();
 
-        var form = new VoitureFormViewModel
-        {
-            Id = voiture.Id,
-            Immatriculation = voiture.Immatriculation,
-            Annee = voiture.Annee,
-            TarifJournalier = voiture.TarifJournalier,
-            NombrePlaces = voiture.NombrePlaces,
-            Carburant = voiture.Carburant,
-            ModeleId = voiture.ModeleId
-        };
-        var modeles = await _modeles.ListerAsync(cancellationToken);
-        form.ModelesDisponibles = modeles.Select(m => new SelectListItem(
-            $"{m.Marque?.Nom} — {m.Nom}",
-            m.Id.ToString()));
+        var form = VersFormulaire(voiture);
+        form.ModelesDisponibles = await ChargerModelesAsync(cancellationToken);
         return View(form);
     }
 
@@ -117,32 +85,15 @@ public class VoituresController : Controller
 
         if (!ModelState.IsValid)
         {
-            var modeles = await _modeles.ListerAsync(cancellationToken);
-            form.ModelesDisponibles = modeles.Select(m => new SelectListItem(
-                $"{m.Marque?.Nom} — {m.Nom}",
-                m.Id.ToString()));
+            form.ModelesDisponibles = await ChargerModelesAsync(cancellationToken);
             return View(form);
         }
 
-        var voiture = new Voiture
-        {
-            Id = form.Id,
-            Immatriculation = form.Immatriculation,
-            Annee = form.Annee,
-            TarifJournalier = form.TarifJournalier,
-            NombrePlaces = form.NombrePlaces,
-            Carburant = form.Carburant,
-            ModeleId = form.ModeleId
-        };
-
-        var resultat = await _voitures.ModifierAsync(voiture, cancellationToken);
+        var resultat = await _voitures.ModifierAsync(VersEntite(form), cancellationToken);
         if (!resultat.Succes)
         {
             ModelState.AddModelError(string.Empty, resultat.Erreur!);
-            var modeles = await _modeles.ListerAsync(cancellationToken);
-            form.ModelesDisponibles = modeles.Select(m => new SelectListItem(
-                $"{m.Marque?.Nom} — {m.Nom}",
-                m.Id.ToString()));
+            form.ModelesDisponibles = await ChargerModelesAsync(cancellationToken);
             return View(form);
         }
 
@@ -173,5 +124,35 @@ public class VoituresController : Controller
 
         TempData["Succes"] = "La voiture a été supprimée.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private static Voiture VersEntite(VoitureFormViewModel form) => new()
+    {
+        Id = form.Id,
+        Immatriculation = form.Immatriculation,
+        Annee = form.Annee,
+        TarifJournalier = form.TarifJournalier,
+        NombrePlaces = form.NombrePlaces,
+        Carburant = form.Carburant,
+        ModeleId = form.ModeleId
+    };
+
+    private static VoitureFormViewModel VersFormulaire(Voiture voiture) => new()
+    {
+        Id = voiture.Id,
+        Immatriculation = voiture.Immatriculation,
+        Annee = voiture.Annee,
+        TarifJournalier = voiture.TarifJournalier,
+        NombrePlaces = voiture.NombrePlaces,
+        Carburant = voiture.Carburant,
+        ModeleId = voiture.ModeleId
+    };
+
+    private async Task<IEnumerable<SelectListItem>> ChargerModelesAsync(CancellationToken cancellationToken)
+    {
+        var modeles = await _modeles.ListerAsync(cancellationToken);
+        return modeles.Select(m => new SelectListItem(
+            $"{m.Marque?.Nom} — {m.Nom}",
+            m.Id.ToString()));
     }
 }

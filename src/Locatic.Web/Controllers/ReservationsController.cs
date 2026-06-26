@@ -37,15 +37,7 @@ public class ReservationsController : Controller
             DateDebut = aujourdhui,
             DateFin = aujourdhui.AddDays(1)
         };
-
-        var clients = await _clients.ListerAsync(cancellationToken);
-        form.ClientsDisponibles = clients.Select(c => new SelectListItem(c.NomComplet, c.Id.ToString()));
-
-        var voitures = await _voitures.ListerAsync(cancellationToken);
-        form.VoituresDisponibles = voitures.Select(v => new SelectListItem(
-            $"{v.Modele?.Marque?.Nom} {v.Modele?.Nom} ({v.Immatriculation}) — {v.TarifJournalier:0.00} €/j",
-            v.Id.ToString()));
-
+        await ChargerListesAsync(form, cancellationToken);
         return View(form);
     }
 
@@ -55,14 +47,7 @@ public class ReservationsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            var clients = await _clients.ListerAsync(cancellationToken);
-            form.ClientsDisponibles = clients.Select(c => new SelectListItem(c.NomComplet, c.Id.ToString()));
-
-            var voitures = await _voitures.ListerAsync(cancellationToken);
-            form.VoituresDisponibles = voitures.Select(v => new SelectListItem(
-                $"{v.Modele?.Marque?.Nom} {v.Modele?.Nom} ({v.Immatriculation}) — {v.TarifJournalier:0.00} €/j",
-                v.Id.ToString()));
-
+            await ChargerListesAsync(form, cancellationToken);
             return View(form);
         }
 
@@ -78,19 +63,22 @@ public class ReservationsController : Controller
         if (!resultat.Succes)
         {
             ModelState.AddModelError(string.Empty, resultat.Erreur!);
-
-            var clients = await _clients.ListerAsync(cancellationToken);
-            form.ClientsDisponibles = clients.Select(c => new SelectListItem(c.NomComplet, c.Id.ToString()));
-
-            var voitures = await _voitures.ListerAsync(cancellationToken);
-            form.VoituresDisponibles = voitures.Select(v => new SelectListItem(
-                $"{v.Modele?.Marque?.Nom} {v.Modele?.Nom} ({v.Immatriculation}) — {v.TarifJournalier:0.00} €/j",
-                v.Id.ToString()));
-
+            await ChargerListesAsync(form, cancellationToken);
             return View(form);
         }
 
         TempData["Succes"] = $"Réservation enregistrée — montant : {resultat.Valeur!.Montant:0.00} €.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task ChargerListesAsync(ReservationFormViewModel form, CancellationToken cancellationToken)
+    {
+        var clients = await _clients.ListerAsync(cancellationToken);
+        form.ClientsDisponibles = clients.Select(c => new SelectListItem(c.NomComplet, c.Id.ToString()));
+
+        var voitures = await _voitures.ListerAsync(cancellationToken);
+        form.VoituresDisponibles = voitures.Select(v => new SelectListItem(
+            $"{v.Modele?.Marque?.Nom} {v.Modele?.Nom} ({v.Immatriculation}) — {v.TarifJournalier:0.00} €/j",
+            v.Id.ToString()));
     }
 }

@@ -50,3 +50,29 @@ Marque 1 ──< Modele 1 ──< Voiture 1 ──< Reservation >── 1 Client
 
 Les propriétés de navigation permettent la chaîne `Voiture → Modele → Marque`,
 exploitée partout dans les vues (on affiche la marque et le modèle, jamais un simple identifiant).
+
+## Fonctionnalités
+
+- **Tableau de bord** : compteurs (voitures, clients, réservations, réservations en cours, marques, modèles).
+- **Marques / Modèles** : lister, ajouter une marque, ajouter un modèle **rattaché à une marque existante** (liste déroulante).
+- **Voitures** : **CRUD complet** (liste, détail, ajout, modification, suppression) ; choix du modèle au formulaire.
+- **Clients** : lister, ajouter.
+- **Réservations** : lister (qui / quelle voiture / quelles dates / montant / statut), créer.
+
+## Règles métier (réservations)
+
+Appliquées dans `ReservationService` :
+
+1. **Cohérence des dates** : la date de fin doit être strictement postérieure à la date de début.
+2. **Disponibilité** : refus si la voiture est déjà réservée sur une période qui chevauche la demande.
+3. **Montant calculé automatiquement** : `tarif journalier × nombre de jours`.
+
+Autres garde-fous : unicité de l'immatriculation et de l'email, suppression d'une voiture
+interdite si elle est liée à des réservations. Les violations remontent via `OperationResult`
+(pas d'exception de contrôle de flux) et s'affichent dans le formulaire.
+
+## Stack technique
+
+- .NET 9 / ASP.NET Core MVC
+- Entity Framework Core 9 (provider SQLite) + migrations
+- Bootstrap 5 pour la présentation
